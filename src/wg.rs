@@ -71,7 +71,11 @@ impl UAPIClient {
         buff.push_str(format!("endpoint={}\n", conf.peer_address).as_str());
         buff.push_str("persistent_keepalive_interval=10\n".to_string().as_str());
         for route in &conf.route {
-            buff.push_str(format!("allowed_ip={route}\n").as_str());
+            if route.contains("/") {
+                buff.push_str(format!("allowed_ip={route}\n").as_str());
+            } else {
+                buff.push_str(format!("allowed_ip={route}/32\n").as_str());
+            }
         }
 
         // wg-corplink uapi operations
@@ -81,7 +85,11 @@ impl UAPIClient {
         buff.push_str(format!("mtu={mtu}\n").as_str());
         buff.push_str("up=true\n".to_string().as_str());
         for route in &conf.route {
-            buff.push_str(format!("route={route}\n").as_str());
+            if route.contains("/") {
+                buff.push_str(format!("route={route}\n").as_str());
+            } else {
+                buff.push_str(format!("route={route}/32\n").as_str());
+            }
         }
         // end operation
 
