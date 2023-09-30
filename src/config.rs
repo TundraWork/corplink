@@ -40,6 +40,7 @@ pub struct Config {
     pub conf_file: Option<String>,
     pub state: Option<State>,
     pub vpn_server_name: Option<String>,
+    pub vpn_route_full: Option<bool>,
 }
 
 impl fmt::Display for Config {

@@ -86,7 +86,7 @@ impl UAPIClient {
         // end operation
 
         buff.push('\n');
-        log::info!("send config to uapi");
+        log::info!("send config to uapi:\n{}", buff);
         let data = uapi(buff.as_bytes());
         let s = String::from_utf8(data).unwrap();
         if !s.contains("errno=0") {
