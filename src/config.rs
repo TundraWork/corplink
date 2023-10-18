@@ -22,6 +22,9 @@ pub const PLATFORM_DING_TALK: &str = "dingtalk";
 #[allow(dead_code)]
 pub const PLATFORM_AAD: &str = "aad";
 
+pub const ROUTING_MODE_SPLIT: &str = "split";
+pub const ROUTING_MODE_FULL: &str = "full";
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Config {
     pub company_name: String,
@@ -36,6 +39,7 @@ pub struct Config {
     pub server: Option<String>,
     pub interface_name: Option<String>,
     pub debug_wg: Option<bool>,
+    pub routing_mode: Option<String>,
     #[serde(skip_serializing)]
     pub conf_file: Option<String>,
     pub state: Option<State>,

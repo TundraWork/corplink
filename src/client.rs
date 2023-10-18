@@ -16,7 +16,10 @@ use serde_json::{json, Map, Value};
 use sha2::Digest;
 
 use crate::api::{ApiName, ApiUrl, URL_GET_COMPANY};
-use crate::config::{Config, WgConf, PLATFORM_CORPLINK, PLATFORM_LARK, PLATFORM_LDAP};
+use crate::config::{
+    Config, WgConf, PLATFORM_CORPLINK, PLATFORM_LARK, PLATFORM_LDAP,
+    ROUTING_MODE_FULL, ROUTING_MODE_SPLIT,
+};
 use crate::resp::*;
 use crate::state::State;
 use crate::totp::{totp_offset, TIME_STEP};
@@ -663,7 +666,16 @@ impl Client {
         let peer_key = wg_info.public_key;
         let public_key = self.conf.public_key.clone().unwrap();
         let private_key = self.conf.private_key.clone().unwrap();
-        let route = wg_info.setting.vpn_route_split;
+        let mut route = match self.conf.routing_mode.as_deref() {
+            Some(ROUTING_MODE_SPLIT) | None => wg_info.setting.vpn_route_split,
+            Some(ROUTING_MODE_FULL) => wg_info.setting.vpn_route_full,
+            _ => panic!("unsupported routing_mode, expect split or full"),
+        };
+        for ip in &mut route {
+            if !ip.contains("/") {
+                ip.push_str("/32");
+            }
+        }
 
         // corplink config
         let wg_conf = WgConf {

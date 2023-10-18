@@ -102,6 +102,8 @@ macos 要求 tun 设备的名称满足正则表达式 `utun[0-9]*` ，因此需�
   "debug_wg": true,
   // will use corplink as interface name
   "interface_name": "corplink",
+  // traffic routing mode, choose between split/full tunnel
+  "routing_mode": "split",
   // will use the specified server to connect, for example 'HK-1'
   // name from server list
   "vpn_server_name": "hk"
