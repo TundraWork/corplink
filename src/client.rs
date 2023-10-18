@@ -287,7 +287,7 @@ impl Client {
             }
             _ => {
                 // TODO: add all tps login support
-                panic!("unsupported platform, please contact the developer");
+                panic!("unsupported platform {}, please contact the developer", method);
             }
         }
     }
@@ -612,17 +612,19 @@ impl Client {
 
     pub async fn connect_vpn(&mut self) -> Result<WgConf, Error> {
         let vpn_info = self.list_vpn().await?;
-        let mut avalaible = false;
+        let mut available = false;
 
         log::info!(
-            "found {} vpn(s), details: {:?}",
+            "found {} servers: {:?}",
             vpn_info.len(),
             vpn_info
                 .iter()
                 .map(|i| i.en_name.clone())
                 .collect::<Vec<String>>()
         );
-        let mut vpn_addr = String::new();
+
+        let mut peer_address = String::new();
+        let mut protocol: i32 = 0;
         for vpn in vpn_info {
             if let Some(server_name) = self.conf.vpn_server_name.clone() {
                 if vpn.en_name != server_name {
@@ -633,39 +635,36 @@ impl Client {
             let mode = match vpn.protocol_mode {
                 1 => "tcp",
                 2 => "udp",
-                _ => "unknow protocol",
+                _ => "unknown protocol",
             };
             log::info!(
                 "check if {} vpn {}:{} is available",
                 mode, &vpn.ip, &vpn.vpn_port
             );
-            vpn_addr = format!("{}:{}", &vpn.ip, vpn.vpn_port);
+            peer_address = format!("{}:{}", &vpn.ip, vpn.vpn_port);
+            protocol = vpn.protocol_mode;
             if self.ping_vpn(vpn.ip, vpn.api_port).await {
                 log::info!("available");
                 match mode {
                     "udp" => {
-                        avalaible = true;
+                        available = true;
                         break;
                     }
                     _ => {
-                        log::info!("we don't support {} wg for now", mode)
+                        log::info!("but {} ({}) is not supported yet", mode, protocol);
+                        break;
                     }
                 };
             }
             log::info!("not available");
         }
-        if !avalaible {
-            return Err(Error::Error("no vpn available".to_string()));
+        if !available {
+            return Err(Error::Error("no servers available".to_string()));
         }
 
         let key = self.conf.public_key.clone().unwrap();
         log::info!("try to get wg conf from remote");
         let wg_info = self.fetch_peer_info(&key).await?;
-        let mtu = wg_info.setting.vpn_mtu;
-        let dns = wg_info.setting.vpn_dns;
-        let peer_key = wg_info.public_key;
-        let public_key = self.conf.public_key.clone().unwrap();
-        let private_key = self.conf.private_key.clone().unwrap();
         let mut route = match self.conf.routing_mode.as_deref() {
             Some(ROUTING_MODE_SPLIT) | None => wg_info.setting.vpn_route_split,
             Some(ROUTING_MODE_FULL) => wg_info.setting.vpn_route_full,
@@ -681,14 +680,14 @@ impl Client {
         let wg_conf = WgConf {
             address: wg_info.ip,
             mask: wg_info.ip_mask.parse::<u32>().unwrap(),
-            peer_address: vpn_addr,
-            mtu,
-            public_key,
-            private_key,
-            peer_key,
+            peer_address,
+            mtu: wg_info.setting.vpn_mtu,
+            public_key: self.conf.public_key.clone().unwrap(),
+            private_key: self.conf.private_key.clone().unwrap(),
+            peer_key: wg_info.public_key,
             route,
-            dns,
-            protocol: 0,
+            dns: wg_info.setting.vpn_dns,
+            protocol,
         };
         Ok(wg_conf)
     }
