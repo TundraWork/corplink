@@ -25,6 +25,8 @@ pub const PLATFORM_AAD: &str = "aad";
 
 pub const STRATEGY_LATENCY: &str = "latency";
 pub const STRATEGY_DEFAULT: &str = "default";
+pub const ROUTING_MODE_SPLIT: &str = "split";
+pub const ROUTING_MODE_FULL: &str = "full";
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Config {
@@ -40,6 +42,7 @@ pub struct Config {
     pub server: Option<String>,
     pub interface_name: Option<String>,
     pub debug_wg: Option<bool>,
+    pub routing_mode: Option<String>,
     #[serde(skip_serializing)]
     pub conf_file: Option<String>,
     pub state: Option<State>,
