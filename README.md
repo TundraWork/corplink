@@ -1,48 +1,40 @@
-# corplink-rs
+# corplink
 
-使用 rust 实现的 [飞连][1] 客户端，支持 Linux/Windows10/MacOS
+Yet another sealsuite client
 
-# 安装
+## Compile
 
-## ArchLinux
-
-下载 [release](https://github.com/PinkD/corplink-rs/releases) 中的安装包，并安装
-
-```bash
-pacman -U corplink-rs-4.1-1-x86_64.pkg.tar.zst
-```
-
-> 欢迎贡献其它包管理器的打包脚本
-
-## 手动编译
-
-### linux/macos
+### linux / macOS
 
 ```bash
 git clone https://github.com/PinkD/corplink-rs --depth 1
 cd corplink-rs
+
 # build libwg
 cd libwg
 ./build.sh
+
 # if you are using Windows, you can clone and build libwg maunally
 # ref: wireguard-go/Makefile:libwg
 
 cargo build --release
+
 # install corplink-rs to your PATH
 mv target/release/corplink-rs /usr/bin/
 ```
 
 ### windows
 
-参考 [#34](https://github.com/PinkD/corplink-rs/issues/34)
+See: [#34](https://github.com/PinkD/corplink-rs/issues/34)
 
-# 用法
+## Usage
 
-> **该程序需要 root 权限来启动 `wg-go` (windows 上需要管理员权限)**
+> root permission is required for running `wg-go` (Administrator permission on Windows)
 
 ```bash
 # direct
 corplink-rs config.json
+
 # systemd
 # config is /etc/corplink/config.json
 systemctl start corplink-rs.service
@@ -55,17 +47,17 @@ systemctl enable corplink-rs.service
 systemctl start corplink-rs@test.service
 ```
 
-## windows 特殊说明
+### Note for Windows users
 
-windows 中启动 `wg-go` 需要 [wintun](6) 支持，请到官网下载，并将 `wintun.dll` 与 `corplink-rs` 放到同一目录下(或者环境变量下)
+[wintun](6) is required for running `wg-go` in Windows. You need to download and place `wintun.dll` in the same directory as `corplink-rs` (add to PATH also works).
 
-## macos 特殊说明
+### Note for macOS users
 
-macos 要求 tun 设备的名称满足正则表达式 `utun[0-9]*` ，因此需要将配置文件中的 `interface_name` 改为符合正则的名字，例如 `utun114514`
+macOS requires the name of TUN devices in the form of `utun[0-9]*`. You need to change `interface_name` in the config file according to this format, eg. `utun20001`.
 
-# 配置文件实例
+## Config
 
-最小配置
+### Minimal configuration
 
 ```json
 {
@@ -74,7 +66,7 @@ macos 要求 tun 设备的名称满足正则表达式 `utun[0-9]*` ，因此需�
 }
 ```
 
-推荐配置(自用配置)
+### Typical configuration
 
 ```json
 {
@@ -85,7 +77,7 @@ macos 要求 tun 设备的名称满足正则表达式 `utun[0-9]*` ，因此需�
 }
 ```
 
-完整配置
+### Full configuration
 
 ```json
 {
@@ -97,7 +89,7 @@ macos 要求 tun 设备的名称满足正则表达式 `utun[0-9]*` ，因此需�
   // dingtalk/aad/weixin is not supported yet
   "platform": "ldap",
   "code": "totp code",
-  // default is DollarOS(not CentOS)
+  // default is DollarOS (not CentOS)
   "device_name": "any string to describe your device",
   "device_id": "md5 of device_name or any string with same format",
   "public_key": "wg public key, can be generated from private key",
@@ -116,34 +108,21 @@ macos 要求 tun 设备的名称满足正则表达式 `utun[0-9]*` ，因此需�
   // latency: choose the server with the lowest latency
   // default: choose the first available server
   "vpn_select_strategy": "latency"
+  "vpn_server_name": "HK-1"
 }
 ```
 
-# 原理和分析
+## Analysis
 
-[飞连][1] 是基于 [wg-go][2] 魔改的企业级 VPN 产品
+[Feilian / Sealsuite / VeCorplink][1] is an enterprise VPN solution based on [wireguard-go][2].
 
-## 配置原理
+### Non-upstream-compatible changes
 
-魔改了配置的方式，加了鉴权
+Feilian version 2.0.9 added a `protocol_version` field, which needs a modified version of `wireguard-go` - [wg-corplink][5] to work.
 
-猜测是：
-- 动态管理 peer
-- 客户端通过验证后，使用 public key 来请求连接，然后服务端就将客户端的 key 加到 peer 库里，然后将配置返回给客户端，等待客户端连接
-    - wg 是支持同一个接口上连多个 peer ，所以这样是 OK 的
-- 定时将不活跃的客户端清理，释放分配的 IP
-- ...
+### Typical working logic
 
-因此，我们只需要生成 wg 的 key ，然后去找服务端拿配置，然后写到 wg 配置里，启动 wg ，就能连上服务端了
-
-### 后续改动
-
-2.0.9 版本(或者更早)新增了 `protocol_version` 字段，需要使用魔改后的 [wg-corplink][5] 才能连接
-
-## 请求流程
-
-
-### Linux
+#### Linux
 
 ```mermaid
 graph TD;
@@ -159,7 +138,7 @@ graph TD;
     D-->E-->F-->G;
 ```
 
-### Android
+#### Android
 
 ```mermaid
 graph TD;
@@ -174,21 +153,11 @@ graph TD;
     C-->D-->E-->F;
 ```
 
-## otp 实现
+### OTP implement
 
-飞连的 otp 是使用的标准的 [totp][1] ，在 ua 为 Android 时，会在登录时返回 totp 的 token ，然后使用 totp 算法就能生成出当前时间的验证码了，然后在获取连接信息时传输该验证码，就不需要单独验证验证码了
+Feilian uses standard [TOTP][1] for OTP. When the client's UA is Android, the server will return the token for TOTP, and the client can use standard TOTP argorithm to generate current OTP code. Passing this OTP code when requesting connection info will let us to keep the client session.
 
-# TODO
-
-- [ ] 使用 [Tauri][7] 实现界面(~~或许大概可能永远不会有~~)
-- [ ] 实现 TCP 版的 wg 协议
-- [x] 为不同配置生成不同的 `cookies.json`
-- [x] windows/mac 实现
-- [x] 自动使用从服务器返回的请求中的时间戳同步时间
-- [x] 自动生成 wg key
-- [x] 修复服务端异常断开连接后客户端不会退出的问题
-
-# Changelog
+## Changelog
 
 - 0.4.3
   - support corplink 2.2.x(by @jixiuf)
@@ -241,35 +210,18 @@ graph TD;
 - 0.1.0
   - first version
 
-# 参考链接
+## Links
 
-- [wg-go][2]
-- [totp][3]
-- [python 版本][4]
+- [wireguard-go][2]
+- [TOTP][3]
+- [Python implementation][4]
 - [wg-corplink][5]
 - [wintun][6]
 - [Tauri][7]
 
-# License
+## License
 
-```license
- Copyright (C) 2023  PinkD, ShuNing, LionheartLann, XYenon, Verge, jixiuf
-
-    This program is free software; you can redistribute it and/or
-    modify it under the terms of the GNU General Public License
-    as published by the Free Software Foundation; either version 2
-    of the License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-```
-
+This software is released under the GNU GPL-2.0 License.
 
 [1]: https://www.volcengine.com/product/vecorplink
 [2]: https://github.com/WireGuard/wireguard-go

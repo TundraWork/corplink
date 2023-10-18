@@ -54,6 +54,7 @@ pub struct RespOtp {
     pub code: String,
 }
 
+#[derive(Clone)]
 #[derive(serde::Deserialize)]
 pub struct RespVpnInfo {
     pub api_port: u16,

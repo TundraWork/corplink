@@ -47,7 +47,7 @@ pub struct Config {
     pub conf_file: Option<String>,
     pub state: Option<State>,
     pub vpn_server_name: Option<String>,
-    pub vpn_select_strategy: Option<String>
+    pub vpn_select_strategy: Option<String>,
     pub vpn_route_full: Option<bool>,
 }
 
@@ -128,7 +128,7 @@ pub struct WgConf {
     pub peer_key: String,
     pub route: Vec<String>,
 
-    // extent confs
+    // extended conf
     pub dns: String,
 
     // corplink confs

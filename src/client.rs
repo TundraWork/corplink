@@ -290,7 +290,7 @@ impl Client {
             }
             _ => {
                 // TODO: add all tps login support
-                panic!("unsupported platform, please contact the developer");
+                panic!("unsupported platform {}, please contact the developer", method);
             }
         }
     }
@@ -683,9 +683,11 @@ impl Client {
 
     pub async fn connect_vpn(&mut self) -> Result<WgConf, Error> {
         let vpn_info = self.list_vpn().await?;
+        let mut peer_address = String::new();
+        let mut protocol: i32 = 0;
 
         log::info!(
-            "found {} vpn(s), details: {:?}",
+            "found {} servers: {:?}",
             vpn_info.len(),
             vpn_info
                 .iter()
@@ -704,6 +706,14 @@ impl Client {
                 true
             })
             .filter(|vpn| {
+                peer_address = format!("{}:{}", &vpn.ip, vpn.vpn_port);
+                protocol = vpn.protocol_mode;
+                log::info!(
+                    "name: {} address: {} protocol: {}",
+                    vpn.en_name,
+                    peer_address,
+                    protocol,
+                );
                 let mode = match vpn.protocol_mode {
                     1 => "tcp",
                     2 => "udp",
@@ -713,9 +723,11 @@ impl Client {
                     "udp" => true,
                     _ => {
                         log::info!(
-                            "server name {} is not support {} wg for now",
+                            "mode: {} protocol: {} is not supported by server: {} ({})",
+                            mode,
+                            protocol,
                             vpn.en_name,
-                            mode
+                            peer_address,
                         );
                         false
                     }
@@ -745,11 +757,6 @@ impl Client {
         let key = self.conf.public_key.clone().unwrap();
         log::info!("try to get wg conf from remote");
         let wg_info = self.fetch_peer_info(&key).await?;
-        let mtu = wg_info.setting.vpn_mtu;
-        let dns = wg_info.setting.vpn_dns;
-        let peer_key = wg_info.public_key;
-        let public_key = self.conf.public_key.clone().unwrap();
-        let private_key = self.conf.private_key.clone().unwrap();
         let mut route = match self.conf.routing_mode.as_deref() {
             Some(ROUTING_MODE_SPLIT) | None => wg_info.setting.vpn_route_split,
             Some(ROUTING_MODE_FULL) => wg_info.setting.vpn_route_full,
@@ -765,14 +772,14 @@ impl Client {
         let wg_conf = WgConf {
             address: wg_info.ip,
             mask: wg_info.ip_mask.parse::<u32>().unwrap(),
-            peer_address: vpn_addr,
-            mtu,
-            public_key,
-            private_key,
-            peer_key,
+            peer_address,
+            mtu: wg_info.setting.vpn_mtu,
+            public_key: self.conf.public_key.clone().unwrap(),
+            private_key: self.conf.private_key.clone().unwrap(),
+            peer_key: wg_info.public_key,
             route,
-            dns,
-            protocol: 0,
+            dns: wg_info.setting.vpn_dns,
+            protocol,
         };
         Ok(wg_conf)
     }

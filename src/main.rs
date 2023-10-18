@@ -118,8 +118,7 @@ async fn main() {
     }
     log::info!("start wg-corplink for {}", &name);
     let wg_conf = wg_conf.unwrap();
-    let protocol = wg_conf.protocol;
-    if !wg::start_wg_go(&name, protocol, with_wg_log) {
+    if !wg::start_wg_go(&name, wg_conf.protocol, with_wg_log) {
         log::warn!("failed to start wg-corplink for {}", name);
         exit(EPERM);
     }
