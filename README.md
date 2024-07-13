@@ -83,7 +83,8 @@ macOS requires the name of TUN devices in the form of `utun[0-9]*`. You need to 
 {
   "company_name": "company code name",
   "username": "your_name",
-  // support sha256sum hashed pass if you don't use ldap, will ask email for code if not provided
+  // support sha256sum hashed pass
+  // if you don't use LDAP, will ask for email code
   "password": "your_pass",
   // default is feilian, can be feilian/ldap/lark(aka feishu)/OIDC
   // dingtalk/aad/weixin is not supported yet
@@ -107,8 +108,15 @@ macOS requires the name of TUN devices in the form of `utun[0-9]*`. You need to 
   // latency/default
   // latency: choose the server with the lowest latency
   // default: choose the first available server
-  "vpn_select_strategy": "latency"
-  "vpn_server_name": "HK-1"
+  "vpn_select_strategy": "latency",
+  // manually specify the server to connect
+  "vpn_server_name": "HK-1",
+  // disallow registering specified routes by wireguard, use with caution
+  // must in CIDR format
+  // only works for exact routes returned by server, does not actually do subnet computation
+  "vpn_disallowed_routes": [
+    "10.10.0.0/16"
+  ]
 }
 ```
 

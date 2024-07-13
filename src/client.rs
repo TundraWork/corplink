@@ -768,6 +768,14 @@ impl Client {
             }
         }
 
+        // filter out disallowed routes configured by user
+        if let Some(disallowed_routes) = &self.conf.vpn_disallowed_routes.clone() {
+            route = route
+                .into_iter()
+                .filter(|r| !disallowed_routes.contains(r))
+                .collect();
+        }
+
         // corplink config
         let wg_conf = WgConf {
             address: wg_info.ip,

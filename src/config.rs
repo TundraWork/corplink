@@ -48,7 +48,7 @@ pub struct Config {
     pub state: Option<State>,
     pub vpn_server_name: Option<String>,
     pub vpn_select_strategy: Option<String>,
-    pub vpn_route_full: Option<bool>,
+    pub vpn_disallowed_routes: Option<Vec<String>>,
 }
 
 impl fmt::Display for Config {
