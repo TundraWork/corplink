@@ -49,6 +49,7 @@ pub struct Config {
     pub vpn_server_name: Option<String>,
     pub vpn_select_strategy: Option<String>,
     pub vpn_disallowed_routes: Option<Vec<String>>,
+    pub system_dns_mode: Option<String>,
 }
 
 impl fmt::Display for Config {

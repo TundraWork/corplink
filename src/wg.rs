@@ -95,9 +95,6 @@ impl UAPIClient {
         }
         // end operation
 
-        // TODO: set system dns server
-        log::info!("dns server: {}", conf.dns);
-
         buff.push('\n');
         log::info!("send config to uapi:\n{}", buff);
         let data = uapi(buff.as_bytes());

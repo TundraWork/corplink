@@ -7,6 +7,7 @@ mod template;
 mod totp;
 mod utils;
 mod wg;
+mod dns;
 
 #[cfg(windows)]
 use is_elevated;
@@ -87,11 +88,14 @@ async fn main() {
         },
     }
 
+    let system_dns_mode = conf.system_dns_mode.clone().unwrap_or_default();
+
     let with_wg_log = conf.debug_wg.unwrap_or_default();
     let mut c = Client::new(conf).unwrap();
     let mut logout_retry = true;
     let wg_conf: Option<WgConf>;
 
+    // get client config
     loop {
         if c.need_login() {
             log::info!("not login yet, try to login");
@@ -116,6 +120,8 @@ async fn main() {
             }
         };
     }
+
+    // start wg-corplink
     log::info!("start wg-corplink for {}", &name);
     let wg_conf = wg_conf.unwrap();
     if !wg::start_wg_go(&name, wg_conf.protocol, with_wg_log) {
@@ -128,6 +134,18 @@ async fn main() {
         Err(err) => {
             log::error!("failed to config interface with uapi for {}: {}", name, err);
             exit(EPERM);
+        }
+    }
+
+    // set system dns
+    log::info!("dns server: {}", &wg_conf.dns);
+    if !system_dns_mode.is_empty() {
+        log::info!("configure system dns using mode: {}", &system_dns_mode);
+        match dns::set_system_dns(&system_dns_mode, &wg_conf.dns).await {
+            Ok(_) => {}
+            Err(err) => {
+                log::error!("failed to configure system dns: {}", err);
+            }
         }
     }
 
@@ -156,6 +174,17 @@ async fn main() {
         } => {
             exit_code = ETIMEDOUT;
         },
+    }
+
+    // restore system dns
+    if !system_dns_mode.is_empty() {
+        log::info!("restore system dns");
+        match dns::restore_system_dns(&system_dns_mode).await {
+            Ok(_) => {}
+            Err(err) => {
+                log::error!("failed to restore system dns: {}", err);
+            }
+        }
     }
 
     // shutdown
